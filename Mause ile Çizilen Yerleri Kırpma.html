@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8"> <title>Resmi Kırp ve Kaydet</title>
+    <style>
+        body { font-family: sans-serif; text-align: center; background: #222; color: white; padding: 20px; }
+        #container { position: relative; display: inline-block; margin-bottom: 20px; } /* Canvas yerleşimi */
+        canvas { border: 2px solid #fff; cursor: crosshair; background: #000; } /* Çizim alanı */
+        .btn-group { margin: 20px; } /* Buton grubu boşluğu */
+        button { padding: 10px 20px; font-size: 16px; cursor: pointer; background: #2196F3; color: white; border: none; border-radius: 5px; } /* Buton stili */
+        button:disabled { background: #555; cursor: not-allowed; } /* Aktif olmayan buton stili */
+        #onizleme { border: 2px solid lime; display: none; margin-top: 20px; max-width: 100%; } /* Kırpılan resim önizlemesi */
+    </style>
+</head>
+<body>
+
+    <h2>Mouse ile Çiz, Kırp ve Kaydet</h2>
+    
+    <div id="container">
+        <canvas id="canvas"></canvas> </div>
+
+    <div class="btn-group">
+        <button id="kaydetBtn" onclick="resmiIndir()" disabled>Kırpılan Alanı Kaydet</button>
+        <button onclick="location.reload()" style="background:#f44336;">Sıfırla</button>
+    </div>
+
+    <img id="onizleme" alt="Kırpılan Parça"> <script>
+        const canvas = document.getElementById('canvas'); // Ana tuvali seç
+        const ctx = canvas.getContext('2d'); // Çizim motorunu al
+        const kaydetBtn = document.getElementById('kaydetBtn'); // Kaydet butonunu seç
+        const onizleme = document.getElementById('onizleme'); // Önizleme resmini seç
+
+        let resim = new Image(); // Resim nesnesi yarat
+        resim.crossOrigin = "Anonymous"; // Güvenlik izinlerini ayarla
+        resim.src = "https://iasbh.tmgrup.com.tr/477e0b/0/0/0/0/0/0?u=http://i.sabah.com.tr/sb/galeri/yasam/bas-donduren-muhtesem-resimler/1.jpg&mw=600"; // Örnek resim
+
+        let x, y, gen, yuk; // Koordinat ve boyut değişkenleri
+        let ciziyorMu = false; // Mouse basılı mı takibi
+        let kesilmisVeri = null; // Kırpılan resmin data adresi
+
+        // Resim yüklenince canvas'a çiz
+        resim.onload = () => {
+            canvas.width = resim.width; // Genişliği eşitle
+            canvas.height = resim.height; // Yüksekliği eşitle
+            ctx.drawImage(resim, 0, 0); // Resmi tuvale yapıştır
+        };
+
+        // Mouse basıldığında
+        canvas.addEventListener('mousedown', (e) => {
+            x = e.offsetX; // İlk X noktasını al
+            y = e.offsetY; // İlk Y noktasını al
+            ciziyorMu = true; // Çizimi başlat
+        });
+
+        // Mouse hareket ederken kare çiz
+        canvas.addEventListener('mousemove', (e) => {
+            if (!ciziyorMu) return; // Basılı değilse işlem yapma
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height); // Tuvali temizle
+            ctx.drawImage(resim, 0, 0); // Orijinal resmi tekrar çiz
+
+            gen = e.offsetX - x; // Anlık genişlik
+            yuk = e.offsetY - y; // Anlık yükseklik
+
+            ctx.strokeStyle = "lime"; // Seçim karesi rengi yeşil olsun
+            ctx.lineWidth = 2; // Çizgi kalınlığı
+            ctx.setLineDash([5, 5]); // Çizgiyi kesikli yap (daha şık durur)
+            ctx.strokeRect(x, y, gen, yuk); // Kareyi çiz
+        });
+
+        // Mouse bırakıldığında kırpma yap
+        canvas.addEventListener('mouseup', () => {
+            ciziyorMu = false; // Çizimi bitir
+
+            const tempCanvas = document.createElement('canvas'); // Bellekte gizli tuval oluştur
+            const tCtx = tempCanvas.getContext('2d'); // Gizli tuval motoru
+
+            tempCanvas.width = Math.abs(gen); // Genişliği ayarla
+            tempCanvas.height = Math.abs(yuk); // Yüksekliği ayarla
+
+            // Seçilen alanı gizli tuvale kopyala
+            tCtx.drawImage(resim, x, y, gen, yuk, 0, 0, gen, yuk);
+
+            kesilmisVeri = tempCanvas.toDataURL("image/png"); // Kırpılan alanı PNG formatına çevir
+            onizleme.src = kesilmisVeri; // Önizleme resmine aktar
+            onizleme.style.display = "inline-block"; // Görünür yap
+            kaydetBtn.disabled = false; // Kaydet butonunu aktif et
+        });
+
+        // İndirme fonksiyonu
+        function resmiIndir() {
+            if (!kesilmisVeri) return; // Veri yoksa işlem yapma
+
+            const link = document.createElement('a'); // Gizli bir link (a etiketi) oluştur
+            link.download = 'kirpilmis-resim.png'; // İndirilecek dosyanın adını belirle
+            link.href = kesilmisVeri; // Resim verisini linke bağla
+            link.click(); // Linke otomatik tıkla (böylece indirme başlar)
+        }
+    </script>
+
+</body>
+</html>
